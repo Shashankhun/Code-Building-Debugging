@@ -118,6 +118,25 @@ button:disabled {
     box-shadow: none;
 }
 
+.warning-panel {
+    margin-bottom: 1rem;
+    border: 1px solid rgba(248, 113, 113, 0.25);
+    background: rgba(248, 113, 113, 0.1);
+    color: #fee2e2;
+    padding: 1rem 1.25rem;
+    border-radius: 12px;
+}
+
+.warning-panel code {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 0.15rem 0.35rem;
+    border-radius: 6px;
+}
+
+.hidden {
+    display: none !important;
+}
+
 .secondary-btn {
     background: rgba(255, 255, 255, 0.1);
     border: 1px solid var(--glass-border);
@@ -217,6 +236,20 @@ button:disabled {
     display: flex;
     gap: 0.5rem;
     margin-bottom: 1rem;
+}
+
+.problem-block {
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.problem-block h3 {
+    margin-bottom: 0.75rem;
+    color: var(--accent);
+    font-size: 1rem;
 }
 
 .tab-btn {

@@ -15,6 +15,10 @@
             <p>4-Agent Autonomous Code Builder & Debugger</p>
         </header>
 
+        <div id="local-file-warning" class="glass-panel warning-panel hidden">
+            <strong>Important:</strong> Open this app through <code>http://127.0.0.1:5000</code> instead of loading the HTML file directly.
+        </div>
+
         <main>
             <section class="input-section glass-panel">
                 <textarea id="prompt-input" placeholder="E.g., Build a Python calculator that takes two inputs and performs basic operations..."></textarea>
@@ -71,6 +75,7 @@
                         <button class="tab-btn" data-target="plan-tab">Plan</button>
                         <button class="tab-btn" data-target="terminal-tab">Terminal</button>
                         <button class="tab-btn" data-target="review-tab">Reviewer Feedback</button>
+                        <button class="tab-btn" data-target="debugger-tab">Debugger</button>
                     </div>
 
                     <div class="tab-content glass-panel active" id="code-tab">
@@ -79,6 +84,10 @@
 
                     <div class="tab-content glass-panel" id="plan-tab">
                         <div class="markdown-body" id="plan-display">No plan generated yet.</div>
+                        <div class="problem-block glass-panel" id="plan-problem-block">
+                            <h3>Detected Problem</h3>
+                            <div class="markdown-body" id="problem-display">No problems detected yet.</div>
+                        </div>
                     </div>
 
                     <div class="tab-content glass-panel" id="terminal-tab">
@@ -87,6 +96,10 @@
 
                     <div class="tab-content glass-panel" id="review-tab">
                         <div class="markdown-body" id="review-display">No feedback yet.</div>
+                    </div>
+
+                    <div class="tab-content glass-panel" id="debugger-tab">
+                        <pre><code class="language-python" id="debugger-display">Debugger output will appear here...</code></pre>
                     </div>
                 </section>
             </div>

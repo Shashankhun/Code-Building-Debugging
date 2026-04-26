@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
+    console.log('Mini GPT Pilot frontend initialized');
     const promptInput = document.getElementById('prompt-input');
     const buildBtn = document.getElementById('build-btn');
     const btnLoader = document.getElementById('btn-loader');
@@ -12,12 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const planDisplay = document.getElementById('plan-display');
     const terminalDisplay = document.getElementById('terminal-display');
     const reviewDisplay = document.getElementById('review-display');
+    const debuggerDisplay = document.getElementById('debugger-display');
+    const problemDisplay = document.getElementById('problem-display');
     
     // Extra features
     const retryCounter = document.getElementById('retry-counter');
     const explainFixBtn = document.getElementById('explain-fix-btn');
     const explainFixContent = document.getElementById('explain-fix-content');
     const explainFixContainer = document.getElementById('explain-fix-container');
+    const localFileWarning = document.getElementById('local-file-warning');
 
     // Agents
     const agents = {
@@ -32,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
     let lastError = "";
     let lastCode = "";
     let lastReview = "";
+    let lastDebuggerCode = "";
+    let eventLog = [];
+
+    // Local file warning
+    if (window.location.protocol === 'file:') {
+        localFileWarning.classList.remove('hidden');
+    }
 
     // Tab switching logic
     tabBtns.forEach(btn => {
@@ -59,27 +70,23 @@ document.addEventListener('DOMContentLoaded', () => {
         codeDisplay.textContent = '# Code will appear here...';
         Prism.highlightElement(codeDisplay);
         planDisplay.innerHTML = 'No plan generated yet.';
+        problemDisplay.innerHTML = 'No problems detected yet.';
         terminalDisplay.innerHTML = '> Waiting for execution...';
         terminalDisplay.className = 'terminal-text';
         reviewDisplay.innerHTML = 'No feedback yet.';
+        debuggerDisplay.textContent = 'Debugger output will appear here...';
+        Prism.highlightElement(debuggerDisplay);
         
         lastError = "";
         lastCode = "";
         lastReview = "";
+        lastDebuggerCode = "";
         
         // Switch to Plan tab initially
         document.querySelector('[data-target="plan-tab"]').click();
     }
 
     function setAgentState(agentId, state, statusText) {
-        // Reset all active states
-        Object.values(agents).forEach(a => {
-            if (a.classList.contains('active')) {
-                a.classList.remove('active');
-                a.classList.add('success');
-            }
-        });
-
         const agent = agents[agentId];
         if (agent) {
             agent.className = `agent-item ${state}`;
@@ -88,19 +95,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function handleBuild() {
+        console.log('handleBuild function called');
         const prompt = promptInput.value.trim();
-        if (!prompt) return;
+        console.log('Prompt value:', prompt);
+        if (!prompt) {
+            console.log('Prompt is empty, returning');
+            return;
+        }
 
+        console.log('Disabling button and showing loader');
         buildBtn.disabled = true;
         btnLoader.classList.remove('hidden');
         resetUI();
+        terminalDisplay.textContent = '> Starting build...';
+        terminalDisplay.className = 'terminal-text';
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/build', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt })
-            });
+            console.log('Making fetch request to /api/build');
+            let response;
+            try {
+                response = await fetch('http://127.0.0.1:5000/api/build', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+            } catch (fetchError) {
+                console.error('Fetch failed:', fetchError);
+                throw fetchError;
+            }
+            console.log('Fetch response status:', response.status);
+            console.log('Response content-type:', response.headers.get('content-type'));
+            console.log('Response headers:', [...response.headers.entries()]);
+            console.log('Response body available:', !!response.body);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            console.log('Starting to read response body');
 
             if (!response.body) throw new Error('ReadableStream not yet supported in this browser.');
 
@@ -119,20 +150,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 buffer = lines.pop() || '';
 
                 for (const line of lines) {
-                    if (line.startsWith('event: ')) {
-                        const eventType = line.split('\n')[0].replace('event: ', '');
-                        const dataStr = line.split('\n')[1].replace('data: ', '');
-                        const data = JSON.parse(dataStr);
-                        
-                        processEvent(eventType, data);
+                    const trimmedLine = line.trim();
+                    if (!trimmedLine) continue;
+                    console.log('Processing SSE line:', trimmedLine);
+
+                    if (trimmedLine.startsWith('event: ')) {
+                        const rawLines = trimmedLine.split(/\r?\n/);
+                        const eventType = rawLines[0].replace(/^event:\s*/, '').trim();
+                        const dataLine = rawLines.find(l => l.startsWith('data:'));
+                        if (!dataLine) continue;
+                        const dataStr = dataLine.replace(/^data:\s*/, '').trim();
+                        try {
+                            const data = JSON.parse(dataStr);
+                            console.log('Processing event:', eventType, data);
+                            processEvent(eventType, data);
+                        } catch (err) {
+                            console.error('Failed to parse SSE event data:', dataStr, err);
+                        }
                     }
                 }
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error in handleBuild:', error);
             terminalDisplay.textContent = `System Error: ${error.message}`;
             terminalDisplay.classList.add('error');
         } finally {
+            console.log('Re-enabling button');
             buildBtn.disabled = false;
             btnLoader.classList.add('hidden');
             Object.values(agents).forEach(a => {
@@ -144,10 +187,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function processEvent(type, payload) {
+        console.log('processEvent called with type:', type, 'payload:', payload);
+        eventLog.push({ type, payload, timestamp: Date.now() });
         const { status, data } = payload;
         
         switch (type) {
             case 'status':
+                console.log('Processing status event:', status, data);
                 if (status === 'error') {
                     terminalDisplay.textContent = `> Backend System Error:\n\n${data}`;
                     terminalDisplay.className = 'terminal-text error';
@@ -184,33 +230,56 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             case 'planner_result':
+                console.log('Processing planner_result');
                 planDisplay.innerHTML = marked.parse(data);
+                problemDisplay.innerHTML = 'No problems detected yet.';
                 document.querySelector('[data-target="plan-tab"]').click();
                 break;
 
             case 'coder_result':
-            case 'debugger_result':
+                console.log('Processing coder_result');
                 lastCode = data;
                 codeDisplay.textContent = data;
                 Prism.highlightElement(codeDisplay);
                 document.querySelector('[data-target="code-tab"]').click();
                 break;
 
+            case 'debugger_result':
+                console.log('Processing debugger_result');
+                lastDebuggerCode = data;
+                lastCode = data;
+                codeDisplay.textContent = data;
+                debuggerDisplay.textContent = data;
+                Prism.highlightElement(codeDisplay);
+                Prism.highlightElement(debuggerDisplay);
+                document.querySelector('[data-target="debugger-tab"]').click();
+                break;
+
             case 'execution_success':
+                console.log('Processing execution_success');
                 terminalDisplay.textContent = `> Execution successful!\n\nOutput:\n${data.output}`;
                 terminalDisplay.className = 'terminal-text';
                 break;
 
             case 'execution_error':
+                console.log('Processing execution_error');
                 lastError = data.error;
                 terminalDisplay.textContent = `> Execution failed!\n\nError:\n${data.error}\n\nOutput:\n${data.output}`;
                 terminalDisplay.className = 'terminal-text error';
                 explainFixContainer.classList.remove('hidden');
+                document.querySelector('[data-target="terminal-tab"]').click();
+
+                const errorSummary = data.error.split('\n')[0] || 'Unknown execution error.';
+                problemDisplay.innerHTML = marked.parse(`### Problem detected\n\n\`\`\`\n${errorSummary}\n\n\`\`\``);
                 break;
 
             case 'reviewer_result':
+                console.log('Processing reviewer_result');
                 lastReview = data;
                 reviewDisplay.innerHTML = marked.parse(data);
+                if (!lastError) {
+                    problemDisplay.innerHTML = marked.parse(`### Reviewer findings\n\n${data}`);
+                }
                 document.querySelector('[data-target="review-tab"]').click();
                 break;
         }
@@ -252,10 +321,20 @@ The Debugger Agent analyzed the reviewer's feedback and rewrote the code to hand
         }
     });
 
-    buildBtn.addEventListener('click', handleBuild);
+    buildBtn.addEventListener('click', () => {
+        console.log('Build button clicked');
+        handleBuild();
+    });
+    console.log('Event listener attached to build button');
     promptInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             handleBuild();
         }
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initApp);
+} else {
+    initApp();
+}
