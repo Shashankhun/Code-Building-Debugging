@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini GPT Pilot</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" />
+</head>
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Mini GPT Pilot</h1>
+            <p>4-Agent Autonomous Code Builder & Debugger</p>
+        </header>
+
+        <main>
+            <section class="input-section glass-panel">
+                <textarea id="prompt-input" placeholder="E.g., Build a Python calculator that takes two inputs and performs basic operations..."></textarea>
+                <button id="build-btn">Make it Happen <span class="loader hidden" id="btn-loader"></span></button>
+            </section>
+
+            <div class="workflow-grid">
+                <!-- Status & Agents -->
+                <section class="agents-section glass-panel">
+                    <h2>Agents Status <span id="retry-counter" class="badge hidden">Retries: 0/3</span></h2>
+                    <ul class="agent-list">
+                        <li id="agent-planner" class="agent-item">
+                            <div class="agent-icon">🧩</div>
+                            <div class="agent-info">
+                                <h3>Planner Agent</h3>
+                                <p class="agent-status">Waiting...</p>
+                            </div>
+                        </li>
+                        <li id="agent-coder" class="agent-item">
+                            <div class="agent-icon">💻</div>
+                            <div class="agent-info">
+                                <h3>Coder Agent</h3>
+                                <p class="agent-status">Waiting...</p>
+                            </div>
+                        </li>
+                        <li id="agent-executor" class="agent-item">
+                            <div class="agent-icon">⚡</div>
+                            <div class="agent-info">
+                                <h3>Executor</h3>
+                                <p class="agent-status">Waiting...</p>
+                            </div>
+                        </li>
+                        <li id="agent-reviewer" class="agent-item">
+                            <div class="agent-icon">🔍</div>
+                            <div class="agent-info">
+                                <h3>Reviewer Agent</h3>
+                                <p class="agent-status">Waiting...</p>
+                            </div>
+                        </li>
+                        <li id="agent-debugger" class="agent-item">
+                            <div class="agent-icon">🐞</div>
+                            <div class="agent-info">
+                                <h3>Debugger Agent</h3>
+                                <p class="agent-status">Waiting...</p>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
+
+                <!-- Output Windows -->
+                <section class="output-section">
+                    <div class="tabs">
+                        <button class="tab-btn active" data-target="code-tab">Code</button>
+                        <button class="tab-btn" data-target="plan-tab">Plan</button>
+                        <button class="tab-btn" data-target="terminal-tab">Terminal</button>
+                        <button class="tab-btn" data-target="review-tab">Reviewer Feedback</button>
+                    </div>
+
+                    <div class="tab-content glass-panel active" id="code-tab">
+                        <pre><code class="language-python" id="code-display"># Code will appear here...</code></pre>
+                    </div>
+
+                    <div class="tab-content glass-panel" id="plan-tab">
+                        <div class="markdown-body" id="plan-display">No plan generated yet.</div>
+                    </div>
+
+                    <div class="tab-content glass-panel" id="terminal-tab">
+                        <pre id="terminal-display" class="terminal-text">> Waiting for execution...</pre>
+                    </div>
+
+                    <div class="tab-content glass-panel" id="review-tab">
+                        <div class="markdown-body" id="review-display">No feedback yet.</div>
+                    </div>
+                </section>
+            </div>
+            
+            <div id="explain-fix-container" class="hidden">
+                <button id="explain-fix-btn" class="secondary-btn">✨ Explain Fix</button>
+                <div id="explain-fix-content" class="glass-panel hidden markdown-body"></div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
