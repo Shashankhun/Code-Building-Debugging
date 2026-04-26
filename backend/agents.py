@@ -12,7 +12,7 @@ try:
 except:
     client = None
 
-MODEL_NAME = 'gemini-2.5-flash'
+MODEL_NAME = 'gemini-flash-latest'
 
 # Set this to False if you get a working API key!
 MOCK_MODE = False
